@@ -2,5 +2,5 @@ runtime: go125
 api_version: go1
 
 handlers:
-- url: /.*
-  script: _go_app
+  - url: /.*
+    script: _go_app
