@@ -2,6 +2,7 @@ package router
 
 import (
 	"kasir-api/handler"
+	"kasir-api/helper"
 	"net/http"
 	"strings"
 )
@@ -35,7 +36,7 @@ func (rt *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if path == "/api/product" {
 		switch method {
 		case http.MethodGet:
-			rt.productHandler.HandleGetAll(w)
+			rt.productHandler.HandleGetAll(w, r)
 		case http.MethodPost:
 			rt.productHandler.HandleCreate(w, r)
 		default:
@@ -63,7 +64,7 @@ func (rt *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if path == "/api/categories" {
 		switch method {
 		case http.MethodGet:
-			rt.categoryHandler.HandleGetAll(w)
+			rt.categoryHandler.HandleGetAll(w, r)
 		case http.MethodPost:
 			rt.categoryHandler.HandleCreate(w, r)
 		default:
@@ -93,10 +94,5 @@ func (rt *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // handleHealth handles the health check endpoint
 func (rt *Router) handleHealth(w http.ResponseWriter) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if _, err := w.Write([]byte(`{"status":"healthy"}`)); err != nil {
-		// Error already logged by http.ResponseWriter
-		return
-	}
+	helper.WriteSuccess(w, http.StatusOK, "API Running", nil)
 }

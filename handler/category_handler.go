@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"encoding/json"
 	"errors"
 	"kasir-api/entity"
 	"kasir-api/helper"
@@ -24,10 +23,10 @@ func NewCategoryHandler(service *service.CategoryService) *CategoryHandler {
 }
 
 // HandleGetAll handles GET /api/categories
-func (h *CategoryHandler) HandleGetAll(w http.ResponseWriter) {
+func (h *CategoryHandler) HandleGetAll(w http.ResponseWriter, r *http.Request) {
 	categories, err := h.service.GetAll()
 	if err != nil {
-		helper.WriteError(w, http.StatusInternalServerError, "Failed to retrieve categories", err)
+		helper.WriteError(w, r, http.StatusInternalServerError, "Failed to retrieve categories", err)
 		return
 	}
 	helper.WriteSuccess(w, http.StatusOK, "Success", categories)
@@ -38,17 +37,17 @@ func (h *CategoryHandler) HandleGetByID(w http.ResponseWriter, r *http.Request) 
 	idStr := strings.TrimPrefix(r.URL.Path, "/api/categories/")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		helper.WriteError(w, http.StatusBadRequest, "Invalid Category ID", err)
+		helper.WriteError(w, r, http.StatusBadRequest, "Invalid Category ID", err)
 		return
 	}
 
 	category, err := h.service.GetByID(id)
 	if err != nil {
 		if errors.Is(err, entity.ErrNotFound) {
-			helper.WriteError(w, http.StatusNotFound, "Category not found", err)
+			helper.WriteError(w, r, http.StatusNotFound, "Category not found", err)
 			return
 		}
-		helper.WriteError(w, http.StatusBadRequest, "Invalid request", err)
+		helper.WriteError(w, r, http.StatusBadRequest, "Invalid request", err)
 		return
 	}
 	helper.WriteSuccess(w, http.StatusOK, "Success", category)
@@ -57,19 +56,13 @@ func (h *CategoryHandler) HandleGetByID(w http.ResponseWriter, r *http.Request) 
 // HandleCreate handles POST /api/categories
 func (h *CategoryHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 	var category entity.Category
-	if err := json.NewDecoder(r.Body).Decode(&category); err != nil {
-		helper.WriteError(w, http.StatusBadRequest, "Invalid JSON", err)
+	if !helper.ValidatePayload(w, r, &category) {
 		return
 	}
-	defer func() {
-		if err := r.Body.Close(); err != nil {
-			// Body close error, already processed the request
-		}
-	}()
 
 	createdCategory, err := h.service.Create(&category)
 	if err != nil {
-		helper.WriteError(w, http.StatusBadRequest, "Failed to create category", err)
+		helper.WriteError(w, r, http.StatusBadRequest, "Failed to create category", err)
 		return
 	}
 
@@ -81,28 +74,22 @@ func (h *CategoryHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 	idStr := strings.TrimPrefix(r.URL.Path, "/api/categories/")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		helper.WriteError(w, http.StatusBadRequest, "Invalid Category ID", err)
+		helper.WriteError(w, r, http.StatusBadRequest, "Invalid Category ID", err)
 		return
 	}
 
 	var category entity.Category
-	if err := json.NewDecoder(r.Body).Decode(&category); err != nil {
-		helper.WriteError(w, http.StatusBadRequest, "Invalid JSON", err)
+	if !helper.ValidatePayload(w, r, &category) {
 		return
 	}
-	defer func() {
-		if err := r.Body.Close(); err != nil {
-			// Body close error, already processed the request
-		}
-	}()
 
 	updatedCategory, err := h.service.Update(id, &category)
 	if err != nil {
 		if errors.Is(err, entity.ErrNotFound) {
-			helper.WriteError(w, http.StatusNotFound, "Category not found", err)
+			helper.WriteError(w, r, http.StatusNotFound, "Category not found", err)
 			return
 		}
-		helper.WriteError(w, http.StatusBadRequest, "Failed to update category", err)
+		helper.WriteError(w, r, http.StatusBadRequest, "Failed to update category", err)
 		return
 	}
 
@@ -114,17 +101,17 @@ func (h *CategoryHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
 	idStr := strings.TrimPrefix(r.URL.Path, "/api/categories/")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		helper.WriteError(w, http.StatusBadRequest, "Invalid Category ID", err)
+		helper.WriteError(w, r, http.StatusBadRequest, "Invalid Category ID", err)
 		return
 	}
 
 	err = h.service.Delete(id)
 	if err != nil {
 		if errors.Is(err, entity.ErrNotFound) {
-			helper.WriteError(w, http.StatusNotFound, "Category not found", err)
+			helper.WriteError(w, r, http.StatusNotFound, "Category not found", err)
 			return
 		}
-		helper.WriteError(w, http.StatusBadRequest, "Failed to delete category", err)
+		helper.WriteError(w, r, http.StatusBadRequest, "Failed to delete category", err)
 		return
 	}
 

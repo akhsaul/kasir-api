@@ -32,15 +32,15 @@ kasir-api/
 
 ## Features
 
-- ✅ RESTful API with standard HTTP methods
-- ✅ Clean architecture (entity, data, service, handler, router layers)
-- ✅ In-memory storage with swappable interface
-- ✅ Input validation (name required, price > 0, stock >= 0)
-- ✅ Standardized JSON responses
-- ✅ Error handling with custom error types
-- ✅ Thread-safe operations with mutex
-- ✅ Uses only Go standard library (`net/http`)
-- ✅ Integer IDs (auto-increment) and integer prices
+- ✅ RESTful API dengan metode HTTP standar
+- ✅ Clean architecture (entity, data, service, handler, router)
+- ✅ In-memory storage yang bisa diganti (swappable)
+- ✅ Validasi input (name wajib, price > 0, stock >= 0)
+- ✅ JSON response terstandardisasi
+- ✅ Error handling dengan custom error types
+- ✅ Thread-safe operations dengan mutex
+- ✅ Hanya menggunakan Go standard library (`net/http`)
+- ✅ Integer IDs (auto-increment) dan integer prices
 
 ## API Endpoints
 
@@ -48,12 +48,13 @@ kasir-api/
 ```
 GET /health
 ```
-Returns API health status.
+Mengembalikan status kesehatan API.
 
-**Response:**
+Response (sesuai implementasi helper/response.go):
 ```json
 {
-  "status": "healthy"
+  "status": "OK",
+  "message": "API Running"
 }
 ```
 
@@ -63,12 +64,12 @@ Returns API health status.
 ```
 GET /api/product
 ```
-Retrieves all products.
+Mengambil semua produk.
 
-**Response (example):**
+Response (contoh):
 ```json
 {
-  "success": true,
+  "status": "OK",
   "message": "Success",
   "data": [
     {
@@ -85,12 +86,12 @@ Retrieves all products.
 ```
 GET /api/product/{id}
 ```
-Retrieves a specific product by ID.
+Mengambil produk berdasarkan ID.
 
-**Response:**
+Response:
 ```json
 {
-  "success": true,
+  "status": "OK",
   "message": "Success",
   "data": {
     "id": 1,
@@ -107,7 +108,7 @@ POST /api/product
 Content-Type: application/json
 ```
 
-**Request Body:**
+Request Body:
 ```json
 {
   "name": "Laptop",
@@ -116,10 +117,10 @@ Content-Type: application/json
 }
 ```
 
-**Response:**
+Response:
 ```json
 {
-  "success": true,
+  "status": "OK",
   "message": "Product created successfully",
   "data": {
     "id": 1,
@@ -136,7 +137,7 @@ PUT /api/product/{id}
 Content-Type: application/json
 ```
 
-**Request Body:**
+Request Body:
 ```json
 {
   "name": "Laptop Gaming",
@@ -145,10 +146,10 @@ Content-Type: application/json
 }
 ```
 
-**Response:**
+Response:
 ```json
 {
-  "success": true,
+  "status": "OK",
   "message": "Product updated successfully",
   "data": {
     "id": 1,
@@ -164,10 +165,10 @@ Content-Type: application/json
 DELETE /api/product/{id}
 ```
 
-**Response:**
+Response:
 ```json
 {
-  "success": true,
+  "status": "OK",
   "message": "Product deleted successfully"
 }
 ```
@@ -190,7 +191,7 @@ POST /api/categories
 Content-Type: application/json
 ```
 
-**Request Body:**
+Request Body:
 ```json
 {
   "name": "Electronics",
@@ -204,7 +205,7 @@ PUT /api/categories/{id}
 Content-Type: application/json
 ```
 
-**Request Body:**
+Request Body:
 ```json
 {
   "name": "Electronics & Gadgets",
@@ -219,36 +220,34 @@ DELETE /api/categories/{id}
 
 ## Error Responses
 
-All errors follow a standard format:
+Semua error mengikuti format standar dari helper/response.go:
 
 ```json
 {
-  "success": false,
-  "message": "Failed to create product",
-  "error": "name is required"
+  "status": "ERROR",
+  "message": "Failed to create product"
 }
 ```
 
-### Validation Errors
-
-- `name is required` - Name cannot be empty
-- `price must be greater than 0` - Price must be positive (integer)
-- `stock must be greater than or equal to 0` - Stock cannot be negative
-- `id is required` - ID parameter is missing or invalid
+Contoh pesan validasi yang mungkin muncul:
+- `Invalid JSON` — payload tidak dapat di-decode
+- `Invalid Product ID` atau `Invalid Category ID` — ID tidak valid
+- `Product not found` atau `Category not found` — resource tidak ditemukan
+- `Failed to create/update/delete product/category` — kegagalan bisnis/validasi
 
 ### HTTP Status Codes
 
-- `200 OK` - Successful GET, PUT, DELETE
-- `201 Created` - Successful POST
-- `400 Bad Request` - Validation error or invalid input
-- `404 Not Found` - Resource not found
-- `405 Method Not Allowed` - HTTP method not supported
-- `500 Internal Server Error` - Server error
+- `200 OK` — Berhasil untuk GET, PUT, DELETE
+- `201 Created` — Berhasil untuk POST
+- `400 Bad Request` — Validasi error atau input tidak valid
+- `404 Not Found` — Resource tidak ditemukan
+- `405 Method Not Allowed` — HTTP method tidak didukung
+- `500 Internal Server Error` — Error server
 
 ## Installation & Running
 
-### Prerequisites
-- Go 1.25.6 or later
+### Prasyarat
+- Go 1.25.6 atau lebih baru
 
 ### Build
 ```bash
@@ -260,19 +259,58 @@ go build -o kasir-api .
 ./kasir-api
 ```
 
-Or using `go run`:
+Atau menggunakan `go run`:
 ```bash
 go run .
 ```
 
-The server will start on port 8080 by default. You can change the port using the `PORT` environment variable:
+Server akan berjalan di port 8080 secara default. Ubah port dengan environment variable `PORT`:
 ```bash
 PORT=3000 ./kasir-api
 ```
 
+Catatan: Storage in-memory akan di-reset setiap kali server restart; ID auto-increment dimulai dari 1 pada sesi baru.
+
+## Testing
+
+Skrip `test_api.sh` tersedia untuk menguji seluruh endpoint API secara end-to-end.
+
+### Prasyarat
+- `curl` (wajib)
+- `jq` (opsional, untuk menampilkan JSON dengan rapi)
+
+### Cara Menjalankan
+1. Jalankan server terlebih dahulu (lihat bagian Run). Pastikan base URL sesuai.
+2. Jalankan skrip:
+
+```bash
+./test_api.sh
+```
+
+Secara default, skrip akan menggunakan `http://localhost:8080`. Anda bisa mengubah Base URL dengan argumen pertama:
+
+```bash
+./test_api.sh http://localhost:3000
+```
+
+### Yang Diuji
+Skrip akan menjalankan urutan berikut:
+- Health check: `GET /health`
+- Category: create beberapa kategori, get all, get by ID, update, dan validasi error (invalid ID/JSON, not found)
+- Product: create beberapa produk, get all, get by ID, update, dan validasi error (invalid ID/JSON, not found)
+- Delete: hapus produk dan kategori tertentu, lalu verifikasi 404 pada akses selanjutnya
+
+Skrip menilai berdasarkan HTTP status code (2xx sukses, 4xx untuk error yang diharapkan, atau exact codes seperti 404). Di akhir, skrip menampilkan total, passed/failed, dan success rate, serta exit code 0 jika semua lulus.
+
+### Troubleshooting
+- Pastikan server berjalan dan dapat diakses di Base URL.
+- Jika menggunakan port custom, sesuaikan argumen `./test_api.sh <BASE_URL>`.
+- Bersihkan state dengan me-restart server untuk in-memory storage yang fresh.
+- Jika `jq` tidak terpasang, output body akan ditampilkan apa adanya.
+
 ## Swappable Storage
 
-The storage layer uses an interface pattern, making it easy to swap implementations:
+Layer storage menggunakan pola interface, sehingga mudah diganti implementasinya:
 
 ```go
 type ProductStorage interface {
@@ -284,12 +322,12 @@ type ProductStorage interface {
 }
 ```
 
-Current implementation: `MemoryStorage` (in-memory with mutex for thread safety)
+Implementasi saat ini: `MemoryStorage` (in-memory dengan mutex untuk thread safety)
 
-To add a new storage implementation (e.g., database):
-1. Create a new file in `data/` (e.g., `postgres_storage.go`)
-2. Implement the storage interface
-3. Update `main()` to use the new storage:
+Untuk menambah implementasi storage baru (mis. database):
+1. Buat file baru di `data/` (mis. `postgres_storage.go`)
+2. Implementasikan interface storage
+3. Perbarui `main()` untuk menggunakan storage baru:
 ```go
 storage := data.NewPostgresStorage(connectionString)
 ```
@@ -297,29 +335,29 @@ storage := data.NewPostgresStorage(connectionString)
 ## Project Structure Details
 
 ### Entity Layer
-- **product.go**: Product domain model with JSON tags
-- **category.go**: Category domain model with JSON tags
-- **errors.go**: Custom error types for business logic
+- `product.go`: domain model Product dengan JSON tags
+- `category.go`: domain model Category dengan JSON tags
+- `errors.go`: custom error types untuk business logic
 
 ### Data Layer
-- **product_storage.go**: Product storage interface
-- **category_storage.go**: Category storage interface
-- **category_memory_storage.go**: Category adapter on MemoryStorage
-- **memory_storage.go**: In-memory implementation with thread-safe operations
+- `product_storage.go`: interface storage untuk produk
+- `category_storage.go`: interface storage untuk kategori
+- `category_memory_storage.go`: adapter kategori di atas MemoryStorage
+- `memory_storage.go`: implementasi in-memory dengan operasi thread-safe
 
 ### Service Layer
-- **product_service.go**: Business logic for products (validation, CRUD)
-- **category_service.go**: Business logic for categories (validation, CRUD)
+- `product_service.go`: business logic untuk produk (validasi, CRUD)
+- `category_service.go`: business logic untuk kategori (validasi, CRUD)
 
 ### Handler Layer
-- **product_handler.go**: HTTP request/response handling for products
-- **category_handler.go**: HTTP request/response handling for categories
+- `product_handler.go`: HTTP handler untuk produk
+- `category_handler.go`: HTTP handler untuk kategori
 
 ### Helper Layer
-- **response.go**: Standardized JSON response formatting
+- `response.go`: format JSON response standar (`status`, `message`, `data`)
 
 ### Router Layer
-- **router.go**: HTTP routing with method-based dispatching
+- `router.go`: routing HTTP dengan dispatch berdasarkan method
 
 ## License
 
