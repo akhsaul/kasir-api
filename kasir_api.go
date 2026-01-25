@@ -4,14 +4,17 @@ import (
 	"fmt"
 	"kasir-api/data"
 	"kasir-api/handler"
+	"kasir-api/helper"
 	"kasir-api/router"
 	"kasir-api/service"
-	"log"
 	"net/http"
 	"os"
 )
 
 func main() {
+	// Initialize logger
+	helper.InitLogger()
+
 	// Initialize layers
 	storage := data.NewMemoryStorage()
 
@@ -31,24 +34,26 @@ func main() {
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
-		log.Printf("Defaulting to port %s", port)
+		helper.Info("Defaulting to port %s", port)
 	}
 
 	// Start server
-	log.Printf("Listening on port %s", port)
-	log.Printf("Open http://localhost:%s in the browser", port)
-	log.Printf("Available endpoints:")
-	log.Printf("  GET     /health")
-	log.Printf("  GET     /api/product")
-	log.Printf("  POST    /api/product")
-	log.Printf("  GET     /api/product/{id}")
-	log.Printf("  PUT     /api/product/{id}")
-	log.Printf("  DELETE  /api/product/{id}")
-	log.Printf("  GET     /api/categories")
-	log.Printf("  POST    /api/categories")
-	log.Printf("  GET     /api/categories/{id}")
-	log.Printf("  PUT     /api/categories/{id}")
-	log.Printf("  DELETE  /api/categories/{id}")
+	helper.Info("Listening on port %s", port)
+	helper.Info("Open http://localhost:%s in the browser", port)
+	helper.Info("Available endpoints:")
+	helper.Info("  GET     /health")
+	helper.Info("  GET     /api/product")
+	helper.Info("  POST    /api/product")
+	helper.Info("  GET     /api/product/{id}")
+	helper.Info("  PUT     /api/product/{id}")
+	helper.Info("  DELETE  /api/product/{id}")
+	helper.Info("  GET     /api/categories")
+	helper.Info("  POST    /api/categories")
+	helper.Info("  GET     /api/categories/{id}")
+	helper.Info("  PUT     /api/categories/{id}")
+	helper.Info("  DELETE  /api/categories/{id}")
 
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", port), rt))
+	if err := http.ListenAndServe(fmt.Sprintf(":%s", port), rt); err != nil {
+		helper.Fatal(err)
+	}
 }

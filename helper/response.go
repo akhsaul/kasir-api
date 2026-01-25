@@ -2,7 +2,6 @@ package helper
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 )
 
@@ -38,10 +37,10 @@ func WriteSuccess(w http.ResponseWriter, statusCode int, message string, data in
 // Example log output: [ERROR] POST /api/product - Status: 400 - Message: Invalid JSON - Error: unexpected end of JSON input
 func WriteError(w http.ResponseWriter, r *http.Request, statusCode int, message string, err error) {
 	if err != nil {
-		log.Printf("[ERROR] %s %s - Status: %d - Message: %s - Error: %v",
+		Error("%s %s - Status: %d - Message: %s - Error: %v",
 			r.Method, r.URL.Path, statusCode, message, err)
 	} else {
-		log.Printf("[ERROR] %s %s - Status: %d - Message: %s",
+		Error("%s %s - Status: %d - Message: %s",
 			r.Method, r.URL.Path, statusCode, message)
 	}
 	WriteJSON(w, statusCode, Response{
