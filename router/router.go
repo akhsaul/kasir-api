@@ -1,8 +1,8 @@
 package router
 
 import (
-	"kasir-api/handler"
-	"kasir-api/helper"
+	"kasir-api/handlers"
+	"kasir-api/helpers"
 	"net/http"
 	"strings"
 )

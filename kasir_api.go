@@ -2,42 +2,38 @@ package main
 
 import (
 	"fmt"
-	"kasir-api/data"
-	"kasir-api/handler"
-	"kasir-api/helper"
+	"kasir-api/handlers"
+	"kasir-api/helpers"
+	"kasir-api/repositories"
 	"kasir-api/router"
-	"kasir-api/service"
+	"kasir-api/services"
 	"net/http"
 	"os"
 )
 
 func main() {
-	// Initialize logger
 	helper.InitLogger()
 
-	// Initialize layers
-	storage := data.NewMemoryStorage()
+	// Repository layer (data)
+	repo := repository.NewMemoryRepository()
+	categoryRepo := repository.NewCategoryMemoryAdapter(repo)
 
-	// Product components
-	productService := service.NewProductService(storage)
+	// Service layer (logic)
+	productService := service.NewProductService(repo)
+	categoryService := service.NewCategoryService(categoryRepo)
+
+	// Handler layer (request/response)
 	productHandler := handler.NewProductHandler(productService)
-
-	// Category components
-	categoryStorage := data.NewCategoryMemoryStorage(storage)
-	categoryService := service.NewCategoryService(categoryStorage)
 	categoryHandler := handler.NewCategoryHandler(categoryService)
 
-	// Setup router
 	rt := router.NewRouter(productHandler, categoryHandler)
 
-	// Get port from environment
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 		helper.Info("Defaulting to port %s", port)
 	}
 
-	// Start server
 	helper.Info("Listening on port %s", port)
 	helper.Info("Open http://localhost:%s in the browser", port)
 	helper.Info("Available endpoints:")

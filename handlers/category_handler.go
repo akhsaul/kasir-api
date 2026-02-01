@@ -2,9 +2,9 @@ package handler
 
 import (
 	"errors"
-	"kasir-api/entity"
-	"kasir-api/helper"
-	"kasir-api/service"
+	"kasir-api/models"
+	"kasir-api/helpers"
+	"kasir-api/services"
 	"net/http"
 	"strconv"
 	"strings"
@@ -43,7 +43,7 @@ func (h *CategoryHandler) HandleGetByID(w http.ResponseWriter, r *http.Request) 
 
 	category, err := h.service.GetByID(id)
 	if err != nil {
-		if errors.Is(err, entity.ErrNotFound) {
+		if errors.Is(err, model.ErrNotFound) {
 			helper.WriteError(w, r, http.StatusNotFound, "Category not found", err)
 			return
 		}
@@ -55,7 +55,7 @@ func (h *CategoryHandler) HandleGetByID(w http.ResponseWriter, r *http.Request) 
 
 // HandleCreate handles POST /api/categories
 func (h *CategoryHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
-	var category entity.Category
+	var category model.Category
 	if !helper.ValidatePayload(w, r, &category) {
 		return
 	}
@@ -78,14 +78,14 @@ func (h *CategoryHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var category entity.Category
+	var category model.Category
 	if !helper.ValidatePayload(w, r, &category) {
 		return
 	}
 
 	updatedCategory, err := h.service.Update(id, &category)
 	if err != nil {
-		if errors.Is(err, entity.ErrNotFound) {
+		if errors.Is(err, model.ErrNotFound) {
 			helper.WriteError(w, r, http.StatusNotFound, "Category not found", err)
 			return
 		}
@@ -107,7 +107,7 @@ func (h *CategoryHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
 
 	err = h.service.Delete(id)
 	if err != nil {
-		if errors.Is(err, entity.ErrNotFound) {
+		if errors.Is(err, model.ErrNotFound) {
 			helper.WriteError(w, r, http.StatusNotFound, "Category not found", err)
 			return
 		}

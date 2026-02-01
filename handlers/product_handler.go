@@ -1,10 +1,12 @@
+// Package handler: Handler layer — menerima request dan response.
+// Error request (invalid ID, invalid JSON, dll) → cek sini.
 package handler
 
 import (
 	"errors"
-	"kasir-api/entity"
-	"kasir-api/helper"
-	"kasir-api/service"
+	"kasir-api/models"
+	"kasir-api/helpers"
+	"kasir-api/services"
 	"net/http"
 	"strconv"
 	"strings"
@@ -43,7 +45,7 @@ func (h *ProductHandler) HandleGetByID(w http.ResponseWriter, r *http.Request) {
 
 	product, err := h.service.GetByID(id)
 	if err != nil {
-		if errors.Is(err, entity.ErrNotFound) {
+		if errors.Is(err, model.ErrNotFound) {
 			helper.WriteError(w, r, http.StatusNotFound, "Product not found", err)
 			return
 		}
@@ -55,7 +57,7 @@ func (h *ProductHandler) HandleGetByID(w http.ResponseWriter, r *http.Request) {
 
 // HandleCreate handles POST /api/product
 func (h *ProductHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
-	var product entity.Product
+	var product model.Product
 	if !helper.ValidatePayload(w, r, &product) {
 		return
 	}
@@ -78,14 +80,14 @@ func (h *ProductHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var product entity.Product
+	var product model.Product
 	if !helper.ValidatePayload(w, r, &product) {
 		return
 	}
 
 	updatedProduct, err := h.service.Update(id, &product)
 	if err != nil {
-		if errors.Is(err, entity.ErrNotFound) {
+		if errors.Is(err, model.ErrNotFound) {
 			helper.WriteError(w, r, http.StatusNotFound, "Product not found", err)
 			return
 		}
@@ -107,7 +109,7 @@ func (h *ProductHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
 
 	err = h.service.Delete(id)
 	if err != nil {
-		if errors.Is(err, entity.ErrNotFound) {
+		if errors.Is(err, model.ErrNotFound) {
 			helper.WriteError(w, r, http.StatusNotFound, "Product not found", err)
 			return
 		}

@@ -1,6 +1,7 @@
-package entity
+package model
 
-// Product represents a product in the kasir system
+// Product represents a product in the kasir system.
+// Model layer: definisi bentuk data.
 type Product struct {
 	ID    int    `json:"id"`
 	Name  string `json:"name"`
