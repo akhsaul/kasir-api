@@ -39,14 +39,14 @@ func (h *ProductHandler) HandleGetByID(w http.ResponseWriter, r *http.Request) {
 	idStr := strings.TrimPrefix(r.URL.Path, "/api/products/")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		helper.WriteError(w, r, http.StatusBadRequest, "Invalid Product ID", err)
+		helper.WriteError(w, r, http.StatusNotFound, model.ErrProductNotFound.Error(), model.ErrProductNotFound)
 		return
 	}
 
 	product, err := h.service.GetByID(id)
 	if err != nil {
-		if errors.Is(err, model.ErrNotFound) {
-			helper.WriteError(w, r, http.StatusNotFound, "Product not found", err)
+		if errors.Is(err, model.ErrProductNotFound) {
+			helper.WriteError(w, r, http.StatusNotFound, err.Error(), err)
 			return
 		}
 		helper.WriteError(w, r, http.StatusBadRequest, "Invalid request", err)
@@ -71,7 +71,7 @@ func (h *ProductHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 	createdProduct, err := h.service.Create(product)
 	if err != nil {
 		if errors.Is(err, model.ErrCategoryNotFound) {
-			helper.WriteError(w, r, http.StatusBadRequest, "category_id is not found", err)
+			helper.WriteError(w, r, http.StatusBadRequest, err.Error(), err)
 			return
 		}
 		if errors.Is(err, model.ErrPriceInvalid) || errors.Is(err, model.ErrStockInvalid) || errors.Is(err, model.ErrNameRequired) {
@@ -90,7 +90,7 @@ func (h *ProductHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 	idStr := strings.TrimPrefix(r.URL.Path, "/api/products/")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		helper.WriteError(w, r, http.StatusBadRequest, "Invalid Product ID", err)
+		helper.WriteError(w, r, http.StatusNotFound, model.ErrProductNotFound.Error(), model.ErrProductNotFound)
 		return
 	}
 
@@ -107,12 +107,12 @@ func (h *ProductHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 	updatedProduct, err := h.service.Update(id, product)
 	if err != nil {
-		if errors.Is(err, model.ErrNotFound) {
-			helper.WriteError(w, r, http.StatusNotFound, "Product not found", err)
+		if errors.Is(err, model.ErrProductNotFound) {
+			helper.WriteError(w, r, http.StatusNotFound, err.Error(), err)
 			return
 		}
 		if errors.Is(err, model.ErrCategoryNotFound) {
-			helper.WriteError(w, r, http.StatusBadRequest, "category_id is not found", err)
+			helper.WriteError(w, r, http.StatusBadRequest, err.Error(), err)
 			return
 		}
 		if errors.Is(err, model.ErrPriceInvalid) || errors.Is(err, model.ErrStockInvalid) || errors.Is(err, model.ErrNameRequired) {
@@ -131,14 +131,14 @@ func (h *ProductHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
 	idStr := strings.TrimPrefix(r.URL.Path, "/api/products/")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		helper.WriteError(w, r, http.StatusBadRequest, "Invalid Product ID", err)
+		helper.WriteError(w, r, http.StatusNotFound, model.ErrProductNotFound.Error(), model.ErrProductNotFound)
 		return
 	}
 
 	err = h.service.Delete(id)
 	if err != nil {
-		if errors.Is(err, model.ErrNotFound) {
-			helper.WriteError(w, r, http.StatusNotFound, "Product not found", err)
+		if errors.Is(err, model.ErrProductNotFound) {
+			helper.WriteError(w, r, http.StatusNotFound, err.Error(), err)
 			return
 		}
 		helper.WriteError(w, r, http.StatusBadRequest, "Failed to delete product", err)

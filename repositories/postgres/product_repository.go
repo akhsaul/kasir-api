@@ -63,7 +63,7 @@ func (r *ProductRepository) GetByID(id int) (*model.Product, error) {
 	`, id).Scan(&p.ID, &p.Name, &p.Price, &p.Stock, &categoryID, &categoryName)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, model.ErrNotFound
+			return nil, model.ErrProductNotFound
 		}
 		return nil, err
 	}
@@ -107,7 +107,7 @@ func (r *ProductRepository) Update(product *model.Product) error {
 	}
 	n, _ := result.RowsAffected()
 	if n == 0 {
-		return model.ErrNotFound
+		return model.ErrProductNotFound
 	}
 	if product.CategoryID != nil {
 		var categoryName sql.NullString
@@ -128,7 +128,7 @@ func (r *ProductRepository) Delete(id int) error {
 	}
 	n, _ := result.RowsAffected()
 	if n == 0 {
-		return model.ErrNotFound
+		return model.ErrProductNotFound
 	}
 	return nil
 }

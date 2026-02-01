@@ -27,7 +27,7 @@ func (s *ProductService) GetAll() ([]*model.Product, error) {
 // GetByID retrieves a product by ID.
 func (s *ProductService) GetByID(id int) (*model.Product, error) {
 	if id <= 0 {
-		return nil, model.ErrIDRequired
+		return nil, model.ErrProductNotFound
 	}
 	return s.repo.GetByID(id)
 }
@@ -46,7 +46,7 @@ func (s *ProductService) Create(product *model.Product) (*model.Product, error) 
 // Update updates an existing product with validation.
 func (s *ProductService) Update(id int, product *model.Product) (*model.Product, error) {
 	if id <= 0 {
-		return nil, model.ErrIDRequired
+		return nil, model.ErrProductNotFound
 	}
 	if err := s.validateProduct(product); err != nil {
 		return nil, err
@@ -61,7 +61,7 @@ func (s *ProductService) Update(id int, product *model.Product) (*model.Product,
 // Delete removes a product by ID.
 func (s *ProductService) Delete(id int) error {
 	if id <= 0 {
-		return model.ErrIDRequired
+		return model.ErrProductNotFound
 	}
 	return s.repo.Delete(id)
 }

@@ -50,7 +50,7 @@ func (r *ProductRepository) GetByID(id int) (*model.Product, error) {
 
 	p, exists := r.products[id]
 	if !exists {
-		return nil, model.ErrNotFound
+		return nil, model.ErrProductNotFound
 	}
 	pCopy := *p
 	r.enrichWithCategoryName(&pCopy)
@@ -73,7 +73,7 @@ func (r *ProductRepository) Update(product *model.Product) error {
 	defer r.mu.Unlock()
 
 	if _, exists := r.products[product.ID]; !exists {
-		return model.ErrNotFound
+		return model.ErrProductNotFound
 	}
 	r.products[product.ID] = product
 	r.enrichWithCategoryName(product)
@@ -85,7 +85,7 @@ func (r *ProductRepository) Delete(id int) error {
 	defer r.mu.Unlock()
 
 	if _, exists := r.products[id]; !exists {
-		return model.ErrNotFound
+		return model.ErrProductNotFound
 	}
 	delete(r.products, id)
 	return nil
