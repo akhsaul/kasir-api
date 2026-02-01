@@ -78,14 +78,26 @@ func (r *ProductRepository) GetByID(id int) (*model.Product, error) {
 }
 
 // Create inserts a new product and returns the generated ID.
+// If category_id is set, fetches category_name for the response.
 func (r *ProductRepository) Create(product *model.Product) error {
-	return r.db.QueryRow(`
+	err := r.db.QueryRow(`
 		INSERT INTO products (name, price, stock, category_id) VALUES ($1, $2, $3, $4)
 		RETURNING id
 	`, product.Name, product.Price, product.Stock, product.CategoryID).Scan(&product.ID)
+	if err != nil {
+		return err
+	}
+	if product.CategoryID != nil {
+		var categoryName sql.NullString
+		if err := r.db.QueryRow("SELECT name FROM categories WHERE id = $1", *product.CategoryID).Scan(&categoryName); err == nil && categoryName.Valid {
+			product.CategoryName = categoryName.String
+		}
+	}
+	return nil
 }
 
 // Update updates an existing product.
+// If category_id is set, fetches category_name for the response.
 func (r *ProductRepository) Update(product *model.Product) error {
 	result, err := r.db.Exec(`
 		UPDATE products SET name = $1, price = $2, stock = $3, category_id = $4 WHERE id = $5
@@ -96,6 +108,14 @@ func (r *ProductRepository) Update(product *model.Product) error {
 	n, _ := result.RowsAffected()
 	if n == 0 {
 		return model.ErrNotFound
+	}
+	if product.CategoryID != nil {
+		var categoryName sql.NullString
+		if err := r.db.QueryRow("SELECT name FROM categories WHERE id = $1", *product.CategoryID).Scan(&categoryName); err == nil && categoryName.Valid {
+			product.CategoryName = categoryName.String
+		}
+	} else {
+		product.CategoryName = ""
 	}
 	return nil
 }

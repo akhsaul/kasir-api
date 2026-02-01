@@ -40,7 +40,7 @@ func main() {
 	}
 
 	// Service layer (logic)
-	productService := service.NewProductService(productRepo)
+	productService := service.NewProductService(productRepo, categoryRepo)
 	categoryService := service.NewCategoryService(categoryRepo)
 
 	// Handler layer (request/response)

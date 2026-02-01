@@ -70,6 +70,14 @@ func (h *ProductHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 	}
 	createdProduct, err := h.service.Create(product)
 	if err != nil {
+		if errors.Is(err, model.ErrCategoryNotFound) {
+			helper.WriteError(w, r, http.StatusBadRequest, "category_id is not found", err)
+			return
+		}
+		if errors.Is(err, model.ErrPriceInvalid) || errors.Is(err, model.ErrStockInvalid) || errors.Is(err, model.ErrNameRequired) {
+			helper.WriteError(w, r, http.StatusBadRequest, err.Error(), err)
+			return
+		}
 		helper.WriteError(w, r, http.StatusBadRequest, "Failed to create product", err)
 		return
 	}
@@ -101,6 +109,14 @@ func (h *ProductHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if errors.Is(err, model.ErrNotFound) {
 			helper.WriteError(w, r, http.StatusNotFound, "Product not found", err)
+			return
+		}
+		if errors.Is(err, model.ErrCategoryNotFound) {
+			helper.WriteError(w, r, http.StatusBadRequest, "category_id is not found", err)
+			return
+		}
+		if errors.Is(err, model.ErrPriceInvalid) || errors.Is(err, model.ErrStockInvalid) || errors.Is(err, model.ErrNameRequired) {
+			helper.WriteError(w, r, http.StatusBadRequest, err.Error(), err)
 			return
 		}
 		helper.WriteError(w, r, http.StatusBadRequest, "Failed to update product", err)

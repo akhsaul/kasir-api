@@ -64,6 +64,7 @@ func (r *ProductRepository) Create(product *model.Product) error {
 	product.ID = r.nextProductID
 	r.products[product.ID] = product
 	r.nextProductID++
+	r.enrichWithCategoryName(product)
 	return nil
 }
 
@@ -75,6 +76,7 @@ func (r *ProductRepository) Update(product *model.Product) error {
 		return model.ErrNotFound
 	}
 	r.products[product.ID] = product
+	r.enrichWithCategoryName(product)
 	return nil
 }
 

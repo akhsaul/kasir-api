@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"kasir-api/models"
 	"kasir-api/repositories"
 	"strings"
@@ -9,12 +10,13 @@ import (
 // ProductService handles business logic for products.
 // Service layer: logic kode kita. Error logic → cek sini.
 type ProductService struct {
-	repo repository.ProductRepository
+	repo         repository.ProductRepository
+	categoryRepo repository.CategoryRepository
 }
 
 // NewProductService creates a new ProductService.
-func NewProductService(repo repository.ProductRepository) *ProductService {
-	return &ProductService{repo: repo}
+func NewProductService(repo repository.ProductRepository, categoryRepo repository.CategoryRepository) *ProductService {
+	return &ProductService{repo: repo, categoryRepo: categoryRepo}
 }
 
 // GetAll retrieves all products.
@@ -73,6 +75,14 @@ func (s *ProductService) validateProduct(product *model.Product) error {
 	}
 	if product.Stock < 0 {
 		return model.ErrStockInvalid
+	}
+	if product.CategoryID != nil {
+		if _, err := s.categoryRepo.GetByID(*product.CategoryID); err != nil {
+			if errors.Is(err, model.ErrNotFound) {
+				return model.ErrCategoryNotFound
+			}
+			return err
+		}
 	}
 	return nil
 }
