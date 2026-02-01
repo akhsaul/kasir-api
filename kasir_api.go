@@ -35,8 +35,8 @@ func main() {
 		categoryRepo = postgres.NewCategoryRepository(pgDB)
 	} else {
 		logger.Info("Using in-memory storage")
-		productRepo = memory.NewProductRepository()
 		categoryRepo = memory.NewCategoryRepository()
+		productRepo = memory.NewProductRepository(categoryRepo)
 	}
 
 	// Service layer (logic)
@@ -59,11 +59,11 @@ func main() {
 	logger.Info("Open http://localhost:%s in the browser", port)
 	logger.Info("Available endpoints:")
 	logger.Info("  GET     /health")
-	logger.Info("  GET     /api/product")
-	logger.Info("  POST    /api/product")
-	logger.Info("  GET     /api/product/{id}")
-	logger.Info("  PUT     /api/product/{id}")
-	logger.Info("  DELETE  /api/product/{id}")
+	logger.Info("  GET     /api/products")
+	logger.Info("  POST    /api/products")
+	logger.Info("  GET     /api/products/{id}")
+	logger.Info("  PUT     /api/products/{id}")
+	logger.Info("  DELETE  /api/products/{id}")
 	logger.Info("  GET     /api/categories")
 	logger.Info("  POST    /api/categories")
 	logger.Info("  GET     /api/categories/{id}")

@@ -17,10 +17,13 @@ func NewProductRepository(db *DB) *ProductRepository {
 	return &ProductRepository{db: db}
 }
 
-// GetAll returns all products.
+// GetAll returns all products with category name from JOIN.
 func (r *ProductRepository) GetAll() ([]*model.Product, error) {
 	rows, err := r.db.Query(`
-		SELECT id, name, price, stock FROM products ORDER BY id
+		SELECT p.id, p.name, p.price, p.stock, p.category_id, c.name
+		FROM products p
+		LEFT JOIN categories c ON p.category_id = c.id
+		ORDER BY p.id
 	`)
 	if err != nil {
 		return nil, err
@@ -30,25 +33,46 @@ func (r *ProductRepository) GetAll() ([]*model.Product, error) {
 	var products []*model.Product
 	for rows.Next() {
 		var p model.Product
-		if err := rows.Scan(&p.ID, &p.Name, &p.Price, &p.Stock); err != nil {
+		var categoryID sql.NullInt64
+		var categoryName sql.NullString
+		if err := rows.Scan(&p.ID, &p.Name, &p.Price, &p.Stock, &categoryID, &categoryName); err != nil {
 			return nil, err
+		}
+		if categoryID.Valid {
+			id := int(categoryID.Int64)
+			p.CategoryID = &id
+		}
+		if categoryName.Valid {
+			p.CategoryName = categoryName.String
 		}
 		products = append(products, &p)
 	}
 	return products, rows.Err()
 }
 
-// GetByID returns a product by ID.
+// GetByID returns a product by ID with category name from JOIN.
 func (r *ProductRepository) GetByID(id int) (*model.Product, error) {
 	var p model.Product
+	var categoryID sql.NullInt64
+	var categoryName sql.NullString
 	err := r.db.QueryRow(`
-		SELECT id, name, price, stock FROM products WHERE id = $1
-	`, id).Scan(&p.ID, &p.Name, &p.Price, &p.Stock)
+		SELECT p.id, p.name, p.price, p.stock, p.category_id, c.name
+		FROM products p
+		LEFT JOIN categories c ON p.category_id = c.id
+		WHERE p.id = $1
+	`, id).Scan(&p.ID, &p.Name, &p.Price, &p.Stock, &categoryID, &categoryName)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, model.ErrNotFound
 		}
 		return nil, err
+	}
+	if categoryID.Valid {
+		idVal := int(categoryID.Int64)
+		p.CategoryID = &idVal
+	}
+	if categoryName.Valid {
+		p.CategoryName = categoryName.String
 	}
 	return &p, nil
 }
@@ -56,16 +80,16 @@ func (r *ProductRepository) GetByID(id int) (*model.Product, error) {
 // Create inserts a new product and returns the generated ID.
 func (r *ProductRepository) Create(product *model.Product) error {
 	return r.db.QueryRow(`
-		INSERT INTO products (name, price, stock) VALUES ($1, $2, $3)
+		INSERT INTO products (name, price, stock, category_id) VALUES ($1, $2, $3, $4)
 		RETURNING id
-	`, product.Name, product.Price, product.Stock).Scan(&product.ID)
+	`, product.Name, product.Price, product.Stock, product.CategoryID).Scan(&product.ID)
 }
 
 // Update updates an existing product.
 func (r *ProductRepository) Update(product *model.Product) error {
 	result, err := r.db.Exec(`
-		UPDATE products SET name = $1, price = $2, stock = $3 WHERE id = $4
-	`, product.Name, product.Price, product.Stock, product.ID)
+		UPDATE products SET name = $1, price = $2, stock = $3, category_id = $4 WHERE id = $5
+	`, product.Name, product.Price, product.Stock, product.CategoryID, product.ID)
 	if err != nil {
 		return err
 	}

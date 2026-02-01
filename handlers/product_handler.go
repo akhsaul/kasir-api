@@ -24,7 +24,7 @@ func NewProductHandler(service *service.ProductService) *ProductHandler {
 	}
 }
 
-// HandleGetAll handles GET /api/product
+// HandleGetAll handles GET /api/products
 func (h *ProductHandler) HandleGetAll(w http.ResponseWriter, r *http.Request) {
 	products, err := h.service.GetAll()
 	if err != nil {
@@ -34,9 +34,9 @@ func (h *ProductHandler) HandleGetAll(w http.ResponseWriter, r *http.Request) {
 	helper.WriteSuccess(w, http.StatusOK, "Success", products)
 }
 
-// HandleGetByID handles GET /api/product/{id}
+// HandleGetByID handles GET /api/products/{id}
 func (h *ProductHandler) HandleGetByID(w http.ResponseWriter, r *http.Request) {
-	idStr := strings.TrimPrefix(r.URL.Path, "/api/product/")
+	idStr := strings.TrimPrefix(r.URL.Path, "/api/products/")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		helper.WriteError(w, r, http.StatusBadRequest, "Invalid Product ID", err)
@@ -55,14 +55,20 @@ func (h *ProductHandler) HandleGetByID(w http.ResponseWriter, r *http.Request) {
 	helper.WriteSuccess(w, http.StatusOK, "Success", product)
 }
 
-// HandleCreate handles POST /api/product
+// HandleCreate handles POST /api/products
 func (h *ProductHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
-	var product model.Product
-	if !helper.ValidatePayload(w, r, &product) {
+	var input model.ProductInput
+	if !helper.ValidatePayload(w, r, &input) {
 		return
 	}
 
-	createdProduct, err := h.service.Create(&product)
+	product := &model.Product{
+		Name:       input.Name,
+		Price:      input.Price,
+		Stock:      input.Stock,
+		CategoryID: input.CategoryID,
+	}
+	createdProduct, err := h.service.Create(product)
 	if err != nil {
 		helper.WriteError(w, r, http.StatusBadRequest, "Failed to create product", err)
 		return
@@ -71,21 +77,27 @@ func (h *ProductHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 	helper.WriteSuccess(w, http.StatusCreated, "Product created successfully", createdProduct)
 }
 
-// HandleUpdate handles PUT /api/product/{id}
+// HandleUpdate handles PUT /api/products/{id}
 func (h *ProductHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
-	idStr := strings.TrimPrefix(r.URL.Path, "/api/product/")
+	idStr := strings.TrimPrefix(r.URL.Path, "/api/products/")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		helper.WriteError(w, r, http.StatusBadRequest, "Invalid Product ID", err)
 		return
 	}
 
-	var product model.Product
-	if !helper.ValidatePayload(w, r, &product) {
+	var input model.ProductInput
+	if !helper.ValidatePayload(w, r, &input) {
 		return
 	}
 
-	updatedProduct, err := h.service.Update(id, &product)
+	product := &model.Product{
+		Name:       input.Name,
+		Price:      input.Price,
+		Stock:      input.Stock,
+		CategoryID: input.CategoryID,
+	}
+	updatedProduct, err := h.service.Update(id, product)
 	if err != nil {
 		if errors.Is(err, model.ErrNotFound) {
 			helper.WriteError(w, r, http.StatusNotFound, "Product not found", err)
@@ -98,9 +110,9 @@ func (h *ProductHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 	helper.WriteSuccess(w, http.StatusOK, "Product updated successfully", updatedProduct)
 }
 
-// HandleDelete handles DELETE /api/product/{id}
+// HandleDelete handles DELETE /api/products/{id}
 func (h *ProductHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
-	idStr := strings.TrimPrefix(r.URL.Path, "/api/product/")
+	idStr := strings.TrimPrefix(r.URL.Path, "/api/products/")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		helper.WriteError(w, r, http.StatusBadRequest, "Invalid Product ID", err)

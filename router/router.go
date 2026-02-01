@@ -33,7 +33,7 @@ func (rt *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Product endpoints
-	if path == "/api/product" {
+	if path == "/api/products" {
 		switch method {
 		case http.MethodGet:
 			rt.productHandler.HandleGetAll(w, r)
@@ -46,7 +46,7 @@ func (rt *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Product by ID endpoints
-	if strings.HasPrefix(path, "/api/product/") && path != "/api/product/" {
+	if strings.HasPrefix(path, "/api/products/") && path != "/api/products/" {
 		switch method {
 		case http.MethodGet:
 			rt.productHandler.HandleGetByID(w, r)

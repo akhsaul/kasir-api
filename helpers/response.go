@@ -35,7 +35,7 @@ func WriteSuccess(w http.ResponseWriter, statusCode int, message string, data in
 
 // WriteError writes an error JSON response
 // Logs detailed error information including HTTP method, request path, status code, message, and error details
-// Example log output: [ERROR] POST /api/product - Status: 400 - Message: Invalid JSON - Error: unexpected end of JSON input
+// Example log output: [ERROR] POST /api/products - Status: 400 - Message: Invalid JSON - Error: unexpected end of JSON input
 func WriteError(w http.ResponseWriter, r *http.Request, statusCode int, message string, err error) {
 	if err != nil {
 		logger.Error("%s %s - Status: %d - Message: %s - Error: %v",

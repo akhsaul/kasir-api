@@ -67,7 +67,7 @@ Response (sesuai implementasi helper/response.go):
 #### Get All Products
 
 ```
-GET /api/product
+GET /api/products
 ```
 
 Mengambil semua produk.
@@ -92,7 +92,7 @@ Response (contoh):
 #### Get Product by ID
 
 ```
-GET /api/product/{id}
+GET /api/productss/{id}
 ```
 
 Mengambil produk berdasarkan ID.
@@ -115,7 +115,7 @@ Response:
 #### Create Product
 
 ```
-POST /api/product
+POST /api/products
 Content-Type: application/json
 ```
 
@@ -147,7 +147,7 @@ Response:
 #### Update Product
 
 ```
-PUT /api/product/{id}
+PUT /api/products/{id}
 Content-Type: application/json
 ```
 
@@ -179,7 +179,7 @@ Response:
 #### Delete Product
 
 ```
-DELETE /api/product/{id}
+DELETE /api/products/{id}
 ```
 
 Response:

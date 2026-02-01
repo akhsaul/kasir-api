@@ -141,46 +141,54 @@ run_test "Get Updated Category (1)" "GET" "/api/categories/1"
 
 # Product Tests
 print_header "5. PRODUCT TESTS - CREATE"
-run_test "Create Product - Laptop" "POST" "/api/product" \
-'{"name":"Laptop","price":15000000,"stock":10}'
+run_test "Create Product - Laptop (with category)" "POST" "/api/products" \
+'{"name":"Laptop","price":15000000,"stock":10,"category_id":1}'
 
-run_test "Create Product - Mouse" "POST" "/api/product" \
-'{"name":"Wireless Mouse","price":250000,"stock":50}'
+run_test "Create Product - Mouse (with category)" "POST" "/api/products" \
+'{"name":"Wireless Mouse","price":250000,"stock":50,"category_id":1}'
 
-run_test "Create Product - Keyboard" "POST" "/api/product" \
-'{"name":"Mechanical Keyboard","price":850000,"stock":30}'
+run_test "Create Product - Keyboard (with category)" "POST" "/api/products" \
+'{"name":"Mechanical Keyboard","price":850000,"stock":30,"category_id":1}'
 
-run_test "Create Product - Monitor" "POST" "/api/product" \
-'{"name":"Monitor 24 inch","price":2500000,"stock":15}'
+run_test "Create Product - Monitor (with category)" "POST" "/api/products" \
+'{"name":"Monitor 24 inch","price":2500000,"stock":15,"category_id":1}'
+
+run_test "Create Product - Indomie (without category)" "POST" "/api/products" \
+'{"name":"Indomie Goreng","price":3500,"stock":100}'
 
 print_header "6. PRODUCT TESTS - READ"
-run_test "Get All Products" "GET" "/api/product"
-run_test "Get Product by ID (1)" "GET" "/api/product/1"
+run_test "Get All Products" "GET" "/api/products"
+run_test "Get Product by ID (1) - with category_name" "GET" "/api/products/1"
+run_test "Get Product by ID (5) - without category" "GET" "/api/products/5"
 
 print_header "7. PRODUCT TESTS - UPDATE"
-run_test "Update Product (1)" "PUT" "/api/product/1" \
-'{"name":"Gaming Laptop","price":18000000,"stock":8}'
+run_test "Update Product (1)" "PUT" "/api/products/1" \
+'{"name":"Gaming Laptop","price":18000000,"stock":8,"category_id":1}'
 
-run_test "Get Updated Product (1)" "GET" "/api/product/1"
+run_test "Update Product (5) - add category" "PUT" "/api/products/5" \
+'{"name":"Indomie Goreng","price":3500,"stock":100,"category_id":2}'
+
+run_test "Get Updated Product (1)" "GET" "/api/products/1"
+run_test "Get Updated Product (5) - verify category_name" "GET" "/api/products/5"
 
 # Error Handling Tests
 print_header "8. ERROR HANDLING TESTS"
-run_test "Get Non-existent Product (999)" "GET" "/api/product/999" "" "4xx"
+run_test "Get Non-existent Product (999)" "GET" "/api/products/999" "" "4xx"
 run_test "Get Non-existent Category (999)" "GET" "/api/categories/999" "" "4xx"
-run_test "Get Product with Invalid ID" "GET" "/api/product/invalid" "" "4xx"
+run_test "Get Product with Invalid ID" "GET" "/api/products/invalid" "" "4xx"
 run_test "Get Category with Invalid ID" "GET" "/api/categories/invalid" "" "4xx"
-run_test "Create Product with Invalid JSON" "POST" "/api/product" '{"name":"Test","price":"invalid"}' "4xx"
+run_test "Create Product with Invalid JSON" "POST" "/api/products" '{"name":"Test","price":"invalid"}' "4xx"
 run_test "Create Category with Invalid JSON" "POST" "/api/categories" '{"name":123}' "4xx"
-run_test "Update Non-existent Product (999)" "PUT" "/api/product/999" '{"name":"Test","price":1000,"stock":10}' "4xx"
+run_test "Update Non-existent Product (999)" "PUT" "/api/products/999" '{"name":"Test","price":1000,"stock":10}' "4xx"
 run_test "Update Non-existent Category (999)" "PUT" "/api/categories/999" '{"name":"Test","description":"Test"}' "4xx"
 
 # Delete Tests
 print_header "9. DELETE TESTS"
-run_test "Delete Product (2)" "DELETE" "/api/product/2"
-run_test "Verify Product Deleted (2)" "GET" "/api/product/2" "" "404"
+run_test "Delete Product (2) - Mouse" "DELETE" "/api/products/2"
+run_test "Verify Product Deleted (2)" "GET" "/api/products/2" "" "404"
 run_test "Delete Category (2)" "DELETE" "/api/categories/2"
 run_test "Verify Category Deleted (2)" "GET" "/api/categories/2" "" "404"
-run_test "Delete Non-existent Product (999)" "DELETE" "/api/product/999" "" "4xx"
+run_test "Delete Non-existent Product (999)" "DELETE" "/api/products/999" "" "4xx"
 run_test "Delete Non-existent Category (999)" "DELETE" "/api/categories/999" "" "4xx"
 
 # Final Results
