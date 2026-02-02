@@ -2,11 +2,12 @@ package postgres
 
 import (
 	"database/sql"
-	"kasir-api/helpers/logger"
 	"fmt"
 
-	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/stdlib"
 	"kasir-api/config"
+	"kasir-api/helpers/logger"
 )
 
 // DB wraps *sql.DB for PostgreSQL storage (pgx driver).
@@ -17,14 +18,20 @@ type DB struct {
 // NewDB creates a new PostgreSQL connection and runs migrations.
 func NewDB(cfg *config.DatabaseConfig) (*DB, error) {
 	dsn := cfg.DSN()
-	db, err := sql.Open("pgx", dsn)
-
-	db.SetMaxOpenConns(25)
-	db.SetMaxIdleConns(5)
-
+	connConfig, err := pgx.ParseConfig(dsn)
+	if err != nil {
+		return nil, fmt.Errorf("parse db config: %w", err)
+	}
+	// Disable prepared statement cache so it works with Supabase/Supavisor (transaction mode pooler).
+	connConfig.DefaultQueryExecMode = pgx.QueryExecModeSimpleProtocol
+	connStr := stdlib.RegisterConnConfig(connConfig)
+	db, err := sql.Open("pgx", connStr)
 	if err != nil {
 		return nil, fmt.Errorf("open db: %w", err)
 	}
+
+	db.SetMaxOpenConns(25)
+	db.SetMaxIdleConns(5)
 
 	if err := db.Ping(); err != nil {
 		return nil, fmt.Errorf("ping db: %w", err)

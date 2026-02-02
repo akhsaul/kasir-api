@@ -31,9 +31,11 @@ type Server struct {
 }
 
 // DSN returns the PostgreSQL connection string.
+// default_query_exec_mode=simple_protocol disables prepared statement cache,
+// required when using Supabase/Supavisor (transaction mode pooler).
 func (c *DatabaseConfig) DSN() string {
 	return fmt.Sprintf(
-		"host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
+		"host=%s port=%d user=%s password=%s dbname=%s sslmode=%s default_query_exec_mode=simple_protocol",
 		c.Host, c.Port, c.User, c.Password, c.DBName, c.SSLMode,
 	)
 }
