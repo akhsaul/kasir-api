@@ -52,8 +52,12 @@ func Load() (*Config, error) {
 
 	host := v.GetString("DB_HOST")
 	sslmode := v.GetString("DB_SSLMODE")
-	if sslmode == "" && (host == "localhost" || host == "127.0.0.1") {
-		sslmode = "disable"
+	if sslmode == "" {
+		if host == "localhost" || host == "127.0.0.1" {
+			sslmode = "disable"
+		} else {
+			sslmode = "require"
+		}
 	}
 
 	cfg := &Config{

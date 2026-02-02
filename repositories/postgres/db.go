@@ -2,13 +2,14 @@ package postgres
 
 import (
 	"database/sql"
-	"fmt"
 	"kasir-api/helpers/logger"
-	_ "github.com/lib/pq"
+	"fmt"
+
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"kasir-api/config"
 )
 
-// DB wraps *sql.DB for PostgreSQL storage.
+// DB wraps *sql.DB for PostgreSQL storage (pgx driver).
 type DB struct {
 	*sql.DB
 }
@@ -16,7 +17,11 @@ type DB struct {
 // NewDB creates a new PostgreSQL connection and runs migrations.
 func NewDB(cfg *config.DatabaseConfig) (*DB, error) {
 	dsn := cfg.DSN()
-	db, err := sql.Open("postgres", dsn)
+	db, err := sql.Open("pgx", dsn)
+
+	db.SetMaxOpenConns(25)
+	db.SetMaxIdleConns(5)
+
 	if err != nil {
 		return nil, fmt.Errorf("open db: %w", err)
 	}
@@ -30,9 +35,6 @@ func NewDB(cfg *config.DatabaseConfig) (*DB, error) {
 		db.Close()
 		return nil, fmt.Errorf("migrate: %w", err)
 	}
-
-	db.SetMaxOpenConns(25)
-	db.SetMaxIdleConns(5)
 
 	logger.Info("Database connected successfully")
 
