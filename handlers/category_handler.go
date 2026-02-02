@@ -62,6 +62,10 @@ func (h *CategoryHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 
 	createdCategory, err := h.service.Create(&category)
 	if err != nil {
+		if errors.Is(err, model.ErrNameRequired) {
+			helper.WriteError(w, r, http.StatusBadRequest, err.Error(), err)
+			return
+		}
 		helper.WriteError(w, r, http.StatusBadRequest, "Failed to create category", err)
 		return
 	}
@@ -87,6 +91,10 @@ func (h *CategoryHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if errors.Is(err, model.ErrNotFound) {
 			helper.WriteError(w, r, http.StatusNotFound, "Category not found", err)
+			return
+		}
+		if errors.Is(err, model.ErrNameRequired) {
+			helper.WriteError(w, r, http.StatusBadRequest, err.Error(), err)
 			return
 		}
 		helper.WriteError(w, r, http.StatusBadRequest, "Failed to update category", err)
