@@ -1,9 +1,11 @@
 package memory
 
 import (
-	"kasir-api/models"
-	"kasir-api/repositories"
+	"strings"
 	"sync"
+
+	model "kasir-api/models"
+	repository "kasir-api/repositories"
 )
 
 // ProductRepository holds in-memory product storage and implements repository.ProductRepository.
@@ -23,22 +25,33 @@ func NewProductRepository(categoryRepo repository.CategoryRepository) *ProductRe
 	}
 }
 
-func (r *ProductRepository) enrichWithCategoryName(p *model.Product) {
+func (r *ProductRepository) enrichWithCategory(p *model.Product) {
 	if r.categoryRepo != nil && p.CategoryID != nil {
 		if cat, err := r.categoryRepo.GetByID(*p.CategoryID); err == nil {
-			p.CategoryName = cat.Name
+			p.Category = &model.ProductCategory{
+				Name:        cat.Name,
+				Description: cat.Description,
+			}
 		}
 	}
 }
 
-func (r *ProductRepository) GetAll() ([]*model.Product, error) {
+func (r *ProductRepository) GetAll(name string) ([]*model.Product, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
 	products := make([]*model.Product, 0, len(r.products))
 	for _, p := range r.products {
+		// Filter by name if provided (case-insensitive partial match)
+		if name != "" {
+			loweredName := strings.ToLower(name)
+			loweredProductName := strings.ToLower(p.Name)
+			if !strings.Contains(loweredProductName, loweredName) {
+				continue
+			}
+		}
 		pCopy := *p
-		r.enrichWithCategoryName(&pCopy)
+		r.enrichWithCategory(&pCopy)
 		products = append(products, &pCopy)
 	}
 	return products, nil
@@ -53,7 +66,7 @@ func (r *ProductRepository) GetByID(id int) (*model.Product, error) {
 		return nil, model.ErrProductNotFound
 	}
 	pCopy := *p
-	r.enrichWithCategoryName(&pCopy)
+	r.enrichWithCategory(&pCopy)
 	return &pCopy, nil
 }
 
@@ -64,7 +77,7 @@ func (r *ProductRepository) Create(product *model.Product) error {
 	product.ID = r.nextProductID
 	r.products[product.ID] = product
 	r.nextProductID++
-	r.enrichWithCategoryName(product)
+	r.enrichWithCategory(product)
 	return nil
 }
 
@@ -76,7 +89,7 @@ func (r *ProductRepository) Update(product *model.Product) error {
 		return model.ErrProductNotFound
 	}
 	r.products[product.ID] = product
-	r.enrichWithCategoryName(product)
+	r.enrichWithCategory(product)
 	return nil
 }
 

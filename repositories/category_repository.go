@@ -1,6 +1,6 @@
 package repository
 
-import "kasir-api/models"
+import model "kasir-api/models"
 
 // CategoryRepository defines data access for categories.
 // Repository layer: data buat logic. Error database → cek sini.

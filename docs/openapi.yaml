@@ -1,0 +1,777 @@
+openapi: "3.0.3"
+info:
+  title: Kasir API
+  description: |
+    REST API untuk sistem kasir (point of sale).
+    Mendukung manajemen produk, kategori, transaksi checkout, dan laporan penjualan.
+  version: "1.0.0"
+  contact:
+    name: Kasir API
+
+servers:
+  - url: http://localhost:8080
+    description: Local development
+
+tags:
+  - name: Health
+    description: Health check endpoint
+  - name: Products
+    description: Manajemen produk
+  - name: Categories
+    description: Manajemen kategori produk
+  - name: Transactions
+    description: Checkout dan riwayat transaksi
+  - name: Reports
+    description: Laporan penjualan
+
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Health check
+      description: Cek status API dan konektivitas database (jika PostgreSQL aktif).
+      operationId: healthCheck
+      responses:
+        "200":
+          description: API running
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+              example:
+                status: OK
+                message: API Running
+                data:
+                  api: up
+                  database: up
+        "503":
+          description: Database not reachable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ──────────────────────────────────────────────
+  # Products
+  # ──────────────────────────────────────────────
+
+  /api/products:
+    get:
+      tags: [Products]
+      summary: List semua produk
+      description: Mengambil daftar produk dengan pagination dan filter nama opsional.
+      operationId: listProducts
+      parameters:
+        - name: name
+          in: query
+          description: Filter produk berdasarkan nama (case-insensitive, partial match)
+          schema:
+            type: string
+          example: laptop
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/LimitParam"
+      responses:
+        "200":
+          description: Daftar produk
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/PaginatedProducts"
+
+    post:
+      tags: [Products]
+      summary: Buat produk baru
+      operationId: createProduct
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductInput"
+            example:
+              name: Laptop Gaming
+              price: 15000000
+              stock: 10
+              category_id: 1
+      responses:
+        "201":
+          description: Produk berhasil dibuat
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Product"
+        "400":
+          description: Validasi gagal (nama kosong, harga <= 0, stock < 0, kategori tidak ditemukan)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/products/{id}:
+    get:
+      tags: [Products]
+      summary: Detail produk by ID
+      operationId: getProduct
+      parameters:
+        - $ref: "#/components/parameters/IDParam"
+      responses:
+        "200":
+          description: Detail produk
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Product"
+        "404":
+          description: Produk tidak ditemukan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    put:
+      tags: [Products]
+      summary: Update produk
+      operationId: updateProduct
+      parameters:
+        - $ref: "#/components/parameters/IDParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductInput"
+      responses:
+        "200":
+          description: Produk berhasil diupdate
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Product"
+        "400":
+          description: Validasi gagal
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Produk tidak ditemukan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    delete:
+      tags: [Products]
+      summary: Hapus produk
+      operationId: deleteProduct
+      parameters:
+        - $ref: "#/components/parameters/IDParam"
+      responses:
+        "200":
+          description: Produk berhasil dihapus
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+              example:
+                status: OK
+                message: Product deleted successfully
+        "404":
+          description: Produk tidak ditemukan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ──────────────────────────────────────────────
+  # Categories
+  # ──────────────────────────────────────────────
+
+  /api/categories:
+    get:
+      tags: [Categories]
+      summary: List semua kategori
+      operationId: listCategories
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/LimitParam"
+      responses:
+        "200":
+          description: Daftar kategori
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/PaginatedCategories"
+
+    post:
+      tags: [Categories]
+      summary: Buat kategori baru
+      operationId: createCategory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoryInput"
+            example:
+              name: Elektronik
+              description: Perangkat elektronik
+      responses:
+        "201":
+          description: Kategori berhasil dibuat
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Category"
+        "400":
+          description: Validasi gagal (nama kosong)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/categories/{id}:
+    get:
+      tags: [Categories]
+      summary: Detail kategori by ID
+      operationId: getCategory
+      parameters:
+        - $ref: "#/components/parameters/IDParam"
+      responses:
+        "200":
+          description: Detail kategori
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Category"
+        "404":
+          description: Kategori tidak ditemukan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    put:
+      tags: [Categories]
+      summary: Update kategori
+      operationId: updateCategory
+      parameters:
+        - $ref: "#/components/parameters/IDParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoryInput"
+      responses:
+        "200":
+          description: Kategori berhasil diupdate
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Category"
+        "400":
+          description: Validasi gagal
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Kategori tidak ditemukan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    delete:
+      tags: [Categories]
+      summary: Hapus kategori
+      operationId: deleteCategory
+      parameters:
+        - $ref: "#/components/parameters/IDParam"
+      responses:
+        "200":
+          description: Kategori berhasil dihapus
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+              example:
+                status: OK
+                message: Category deleted successfully
+        "404":
+          description: Kategori tidak ditemukan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ──────────────────────────────────────────────
+  # Transactions
+  # ──────────────────────────────────────────────
+
+  /api/checkout:
+    post:
+      tags: [Transactions]
+      summary: Checkout (buat transaksi baru)
+      description: |
+        Membuat transaksi baru. Stok produk akan berkurang sesuai quantity.
+        Semua item harus valid: produk harus ada, quantity > 0, dan stok mencukupi.
+      operationId: checkout
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckoutRequest"
+            example:
+              items:
+                - product_id: 1
+                  quantity: 2
+                - product_id: 3
+                  quantity: 1
+      responses:
+        "201":
+          description: Checkout berhasil
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Transaction"
+        "400":
+          description: |
+            Validasi gagal:
+            - items kosong (`checkout items cannot be empty`)
+            - quantity <= 0 (`quantity must be greater than 0`)
+            - stok tidak cukup (`insufficient stock`)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Produk tidak ditemukan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/transactions/{id}:
+    get:
+      tags: [Transactions]
+      summary: Detail transaksi by ID
+      operationId: getTransaction
+      parameters:
+        - $ref: "#/components/parameters/IDParam"
+      responses:
+        "200":
+          description: Detail transaksi beserta item detail
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Transaction"
+        "404":
+          description: Transaksi tidak ditemukan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ──────────────────────────────────────────────
+  # Reports
+  # ──────────────────────────────────────────────
+
+  /api/report/hari-ini:
+    get:
+      tags: [Reports]
+      summary: Laporan penjualan hari ini
+      description: Mengembalikan total revenue, jumlah transaksi, dan produk terlaris hari ini.
+      operationId: todayReport
+      responses:
+        "200":
+          description: Laporan hari ini
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/ReportResponse"
+
+  /api/report:
+    get:
+      tags: [Reports]
+      summary: Laporan penjualan per rentang tanggal
+      description: |
+        Mengembalikan total revenue, jumlah transaksi, dan produk terlaris
+        dalam rentang tanggal yang ditentukan (inklusif start_date dan end_date).
+      operationId: dateRangeReport
+      parameters:
+        - name: start_date
+          in: query
+          required: true
+          description: "Tanggal mulai (format: YYYY-MM-DD)"
+          schema:
+            type: string
+            format: date
+          example: "2024-01-01"
+        - name: end_date
+          in: query
+          required: true
+          description: "Tanggal akhir (format: YYYY-MM-DD)"
+          schema:
+            type: string
+            format: date
+          example: "2024-01-31"
+      responses:
+        "200":
+          description: Laporan per rentang tanggal
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/ReportResponse"
+        "400":
+          description: Parameter tanggal tidak valid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+# ════════════════════════════════════════════════
+# Components
+# ════════════════════════════════════════════════
+
+components:
+  parameters:
+    IDParam:
+      name: id
+      in: path
+      required: true
+      description: ID resource (integer)
+      schema:
+        type: integer
+        minimum: 1
+      example: 1
+
+    PageParam:
+      name: page
+      in: query
+      description: "Nomor halaman (default: 1)"
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+
+    LimitParam:
+      name: limit
+      in: query
+      description: "Jumlah item per halaman (default: 20, max: 100)"
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+
+  schemas:
+    # ── Base response wrappers ────────────────
+
+    SuccessResponse:
+      type: object
+      required: [status, message]
+      properties:
+        status:
+          type: string
+          example: OK
+        message:
+          type: string
+          example: Success
+        data: {}
+
+    ErrorResponse:
+      type: object
+      required: [status, message]
+      properties:
+        status:
+          type: string
+          example: ERROR
+        message:
+          type: string
+          example: "product is not found: not found"
+
+    # ── Product ───────────────────────────────
+
+    Product:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: Laptop Gaming
+        price:
+          type: integer
+          description: Harga dalam satuan terkecil (misal Rupiah)
+          example: 15000000
+        stock:
+          type: integer
+          example: 10
+        category:
+          $ref: "#/components/schemas/ProductCategory"
+
+    ProductCategory:
+      type: object
+      description: Informasi kategori yang di-embed dalam response produk (hanya muncul jika produk punya kategori).
+      nullable: true
+      properties:
+        name:
+          type: string
+          example: Elektronik
+        description:
+          type: string
+          example: Perangkat elektronik
+
+    ProductInput:
+      type: object
+      required: [name, price, stock]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          example: Laptop Gaming
+        price:
+          type: integer
+          minimum: 1
+          description: Harus > 0
+          example: 15000000
+        stock:
+          type: integer
+          minimum: 0
+          description: Harus >= 0
+          example: 10
+        category_id:
+          type: integer
+          nullable: true
+          description: ID kategori (opsional). Jika diberikan, kategori harus sudah ada.
+          example: 1
+
+    PaginatedProducts:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Product"
+        page:
+          type: integer
+          example: 1
+        limit:
+          type: integer
+          example: 20
+        total_items:
+          type: integer
+          example: 42
+        total_pages:
+          type: integer
+          example: 3
+
+    # ── Category ──────────────────────────────
+
+    Category:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: Elektronik
+        description:
+          type: string
+          example: Perangkat elektronik
+
+    CategoryInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          example: Elektronik
+        description:
+          type: string
+          example: Perangkat elektronik
+
+    PaginatedCategories:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Category"
+        page:
+          type: integer
+          example: 1
+        limit:
+          type: integer
+          example: 20
+        total_items:
+          type: integer
+          example: 5
+        total_pages:
+          type: integer
+          example: 1
+
+    # ── Transaction ───────────────────────────
+
+    Transaction:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        total_amount:
+          type: integer
+          description: Total harga seluruh item
+          example: 32000000
+        created_at:
+          type: string
+          format: date-time
+          example: "2024-06-15T14:30:00Z"
+        details:
+          type: array
+          items:
+            $ref: "#/components/schemas/TransactionDetail"
+
+    TransactionDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        transaction_id:
+          type: integer
+          example: 1
+        product_id:
+          type: integer
+          example: 1
+        product_name:
+          type: string
+          example: Laptop Gaming
+        quantity:
+          type: integer
+          example: 2
+        price:
+          type: integer
+          description: Harga per unit saat transaksi
+          example: 15000000
+        subtotal:
+          type: integer
+          description: price * quantity
+          example: 30000000
+
+    CheckoutRequest:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/CheckoutItem"
+
+    CheckoutItem:
+      type: object
+      required: [product_id, quantity]
+      properties:
+        product_id:
+          type: integer
+          minimum: 1
+          example: 1
+        quantity:
+          type: integer
+          minimum: 1
+          example: 2
+
+    # ── Report ────────────────────────────────
+
+    ReportResponse:
+      type: object
+      properties:
+        total_revenue:
+          type: integer
+          description: Total pendapatan dalam periode
+          example: 45000000
+        total_transaksi:
+          type: integer
+          description: Jumlah transaksi dalam periode
+          example: 12
+        produk_terlaris:
+          $ref: "#/components/schemas/ProdukTerlaris"
+
+    ProdukTerlaris:
+      type: object
+      nullable: true
+      description: Produk dengan quantity terjual terbanyak (null jika tidak ada transaksi).
+      properties:
+        nama:
+          type: string
+          example: Laptop Gaming
+        qty_terjual:
+          type: integer
+          example: 25

@@ -2,11 +2,17 @@ package postgres
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 
+	"github.com/golang-migrate/migrate/v4"
+	migratepg "github.com/golang-migrate/migrate/v4/database/postgres"
+	"github.com/golang-migrate/migrate/v4/source/iofs"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/stdlib"
+
 	"kasir-api/config"
+	"kasir-api/db"
 	"kasir-api/helpers/logger"
 )
 
@@ -25,21 +31,21 @@ func NewDB(cfg *config.DatabaseConfig) (*DB, error) {
 	// Disable prepared statement cache so it works with Supabase/Supavisor (transaction mode pooler).
 	connConfig.DefaultQueryExecMode = pgx.QueryExecModeSimpleProtocol
 	connStr := stdlib.RegisterConnConfig(connConfig)
-	db, err := sql.Open("pgx", connStr)
+	sqlDB, err := sql.Open("pgx", connStr)
 	if err != nil {
 		return nil, fmt.Errorf("open db: %w", err)
 	}
 
-	db.SetMaxOpenConns(25)
-	db.SetMaxIdleConns(5)
+	sqlDB.SetMaxOpenConns(cfg.MaxOpenConns)
+	sqlDB.SetMaxIdleConns(cfg.MaxIdleConns)
 
-	if err := db.Ping(); err != nil {
+	if err := sqlDB.Ping(); err != nil {
 		return nil, fmt.Errorf("ping db: %w", err)
 	}
 
-	pg := &DB{DB: db}
-	if err := pg.migrate(); err != nil {
-		db.Close()
+	pg := &DB{DB: sqlDB}
+	if err := pg.runMigrations(cfg.DBName); err != nil {
+		sqlDB.Close() //nolint:errcheck // best-effort close on migration failure
 		return nil, fmt.Errorf("migrate: %w", err)
 	}
 
@@ -48,28 +54,31 @@ func NewDB(cfg *config.DatabaseConfig) (*DB, error) {
 	return pg, nil
 }
 
-// migrate creates tables if they don't exist.
-func (db *DB) migrate() error {
-	queries := []string{
-		`CREATE TABLE IF NOT EXISTS categories (
-			id SERIAL PRIMARY KEY,
-			name VARCHAR(255) NOT NULL,
-			description TEXT
-		)`,
-		`CREATE TABLE IF NOT EXISTS products (
-			id SERIAL PRIMARY KEY,
-			name VARCHAR(255) NOT NULL,
-			price INTEGER NOT NULL CHECK (price > 0),
-			stock INTEGER NOT NULL DEFAULT 0 CHECK (stock >= 0),
-			category_id INTEGER REFERENCES categories(id)
-		)`,
-		`ALTER TABLE products ADD COLUMN IF NOT EXISTS category_id INTEGER REFERENCES categories(id)`,
+// runMigrations applies all pending database migrations using golang-migrate.
+func (d *DB) runMigrations(dbName string) error {
+	sourceDriver, err := iofs.New(db.Migrations, "migrations")
+	if err != nil {
+		return fmt.Errorf("create migration source: %w", err)
 	}
 
-	for _, q := range queries {
-		if _, err := db.Exec(q); err != nil {
-			return err
-		}
+	dbDriver, err := migratepg.WithInstance(d.DB, &migratepg.Config{
+		DatabaseName: dbName,
+	})
+	if err != nil {
+		return fmt.Errorf("create migration db driver: %w", err)
 	}
+
+	m, err := migrate.NewWithInstance("iofs", sourceDriver, dbName, dbDriver)
+	if err != nil {
+		return fmt.Errorf("create migrate instance: %w", err)
+	}
+
+	if err := m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
+		return fmt.Errorf("run migrations: %w", err)
+	}
+
+	version, dirty, _ := m.Version()
+	logger.Info("Migrations applied — version: %d, dirty: %v", version, dirty)
+
 	return nil
 }

@@ -4,42 +4,69 @@ package handler
 
 import (
 	"errors"
-	"kasir-api/models"
-	"kasir-api/helpers"
-	"kasir-api/services"
 	"net/http"
-	"strconv"
-	"strings"
+
+	helper "kasir-api/helpers"
+	model "kasir-api/models"
+	service "kasir-api/services"
 )
 
-// ProductHandler handles HTTP requests for product endpoints
+// ProductHandler handles HTTP requests for product endpoints.
 type ProductHandler struct {
 	service *service.ProductService
 }
 
-// NewProductHandler creates a new instance of ProductHandler
-func NewProductHandler(service *service.ProductService) *ProductHandler {
+// NewProductHandler creates a new instance of ProductHandler.
+func NewProductHandler(svc *service.ProductService) *ProductHandler {
 	return &ProductHandler{
-		service: service,
+		service: svc,
 	}
 }
 
-// HandleGetAll handles GET /api/products
+// HandleGetAll handles GET /api/products.
+// Supports query parameters: ?name=searchTerm, ?page=1&limit=20.
 func (h *ProductHandler) HandleGetAll(w http.ResponseWriter, r *http.Request) {
-	products, err := h.service.GetAll()
+	name := r.URL.Query().Get("name")
+
+	products, err := h.service.GetAll(name)
 	if err != nil {
 		helper.WriteError(w, r, http.StatusInternalServerError, "Failed to retrieve products", err)
 		return
 	}
-	helper.WriteSuccess(w, http.StatusOK, "Success", products)
+
+	page, limit := helper.ParsePagination(r, 20)
+	total := len(products)
+
+	// Apply pagination
+	start := (page - 1) * limit
+	if start > total {
+		start = total
+	}
+	end := start + limit
+	if end > total {
+		end = total
+	}
+
+	totalPages := (total + limit - 1) / limit
+	if totalPages == 0 {
+		totalPages = 1
+	}
+
+	paged := &model.PaginatedResponse{
+		Items:      products[start:end],
+		Page:       page,
+		Limit:      limit,
+		TotalItems: total,
+		TotalPages: totalPages,
+	}
+
+	helper.WriteSuccess(w, http.StatusOK, "Success", paged)
 }
 
-// HandleGetByID handles GET /api/products/{id}
+// HandleGetByID handles GET /api/products/{id}.
 func (h *ProductHandler) HandleGetByID(w http.ResponseWriter, r *http.Request) {
-	idStr := strings.TrimPrefix(r.URL.Path, "/api/products/")
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		helper.WriteError(w, r, http.StatusNotFound, model.ErrProductNotFound.Error(), model.ErrProductNotFound)
+	id, ok := helper.ParseIDFromPath(w, r, "/api/products/", model.ErrProductNotFound)
+	if !ok {
 		return
 	}
 
@@ -55,7 +82,7 @@ func (h *ProductHandler) HandleGetByID(w http.ResponseWriter, r *http.Request) {
 	helper.WriteSuccess(w, http.StatusOK, "Success", product)
 }
 
-// HandleCreate handles POST /api/products
+// HandleCreate handles POST /api/products.
 func (h *ProductHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 	var input model.ProductInput
 	if !helper.ValidatePayload(w, r, &input) {
@@ -74,23 +101,17 @@ func (h *ProductHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 			helper.WriteError(w, r, http.StatusBadRequest, err.Error(), err)
 			return
 		}
-		if errors.Is(err, model.ErrPriceInvalid) || errors.Is(err, model.ErrStockInvalid) || errors.Is(err, model.ErrNameRequired) {
-			helper.WriteError(w, r, http.StatusBadRequest, err.Error(), err)
-			return
-		}
-		helper.WriteError(w, r, http.StatusBadRequest, "Failed to create product", err)
+		helper.WriteError(w, r, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 
 	helper.WriteSuccess(w, http.StatusCreated, "Product created successfully", createdProduct)
 }
 
-// HandleUpdate handles PUT /api/products/{id}
+// HandleUpdate handles PUT /api/products/{id}.
 func (h *ProductHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
-	idStr := strings.TrimPrefix(r.URL.Path, "/api/products/")
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		helper.WriteError(w, r, http.StatusNotFound, model.ErrProductNotFound.Error(), model.ErrProductNotFound)
+	id, ok := helper.ParseIDFromPath(w, r, "/api/products/", model.ErrProductNotFound)
+	if !ok {
 		return
 	}
 
@@ -115,27 +136,21 @@ func (h *ProductHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 			helper.WriteError(w, r, http.StatusBadRequest, err.Error(), err)
 			return
 		}
-		if errors.Is(err, model.ErrPriceInvalid) || errors.Is(err, model.ErrStockInvalid) || errors.Is(err, model.ErrNameRequired) {
-			helper.WriteError(w, r, http.StatusBadRequest, err.Error(), err)
-			return
-		}
-		helper.WriteError(w, r, http.StatusBadRequest, "Failed to update product", err)
+		helper.WriteError(w, r, http.StatusBadRequest, err.Error(), err)
 		return
 	}
 
 	helper.WriteSuccess(w, http.StatusOK, "Product updated successfully", updatedProduct)
 }
 
-// HandleDelete handles DELETE /api/products/{id}
+// HandleDelete handles DELETE /api/products/{id}.
 func (h *ProductHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
-	idStr := strings.TrimPrefix(r.URL.Path, "/api/products/")
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		helper.WriteError(w, r, http.StatusNotFound, model.ErrProductNotFound.Error(), model.ErrProductNotFound)
+	id, ok := helper.ParseIDFromPath(w, r, "/api/products/", model.ErrProductNotFound)
+	if !ok {
 		return
 	}
 
-	err = h.service.Delete(id)
+	err := h.service.Delete(id)
 	if err != nil {
 		if errors.Is(err, model.ErrProductNotFound) {
 			helper.WriteError(w, r, http.StatusNotFound, err.Error(), err)

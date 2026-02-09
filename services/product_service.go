@@ -1,10 +1,10 @@
 package service
 
 import (
-	"errors"
-	"kasir-api/models"
-	"kasir-api/repositories"
 	"strings"
+
+	model "kasir-api/models"
+	repository "kasir-api/repositories"
 )
 
 // ProductService handles business logic for products.
@@ -20,8 +20,9 @@ func NewProductService(repo repository.ProductRepository, categoryRepo repositor
 }
 
 // GetAll retrieves all products.
-func (s *ProductService) GetAll() ([]*model.Product, error) {
-	return s.repo.GetAll()
+// If name is provided, filters products by name.
+func (s *ProductService) GetAll(name string) ([]*model.Product, error) {
+	return s.repo.GetAll(name)
 }
 
 // GetByID retrieves a product by ID.
@@ -78,9 +79,6 @@ func (s *ProductService) validateProduct(product *model.Product) error {
 	}
 	if product.CategoryID != nil {
 		if _, err := s.categoryRepo.GetByID(*product.CategoryID); err != nil {
-			if errors.Is(err, model.ErrNotFound) {
-				return model.ErrCategoryNotFound
-			}
 			return err
 		}
 	}

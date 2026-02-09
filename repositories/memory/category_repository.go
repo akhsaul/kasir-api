@@ -1,8 +1,9 @@
 package memory
 
 import (
-	"kasir-api/models"
 	"sync"
+
+	model "kasir-api/models"
 )
 
 // CategoryRepository holds in-memory category storage and implements repository.CategoryRepository.
@@ -37,7 +38,7 @@ func (r *CategoryRepository) GetByID(id int) (*model.Category, error) {
 
 	c, exists := r.categories[id]
 	if !exists {
-		return nil, model.ErrNotFound
+		return nil, model.ErrCategoryNotFound
 	}
 	return c, nil
 }
@@ -57,7 +58,7 @@ func (r *CategoryRepository) Update(category *model.Category) error {
 	defer r.mu.Unlock()
 
 	if _, exists := r.categories[category.ID]; !exists {
-		return model.ErrNotFound
+		return model.ErrCategoryNotFound
 	}
 	r.categories[category.ID] = category
 	return nil
@@ -68,7 +69,7 @@ func (r *CategoryRepository) Delete(id int) error {
 	defer r.mu.Unlock()
 
 	if _, exists := r.categories[id]; !exists {
-		return model.ErrNotFound
+		return model.ErrCategoryNotFound
 	}
 	delete(r.categories, id)
 	return nil

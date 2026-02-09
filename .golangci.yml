@@ -1,0 +1,247 @@
+version: "2"
+
+run:
+  timeout: 5m
+  relative-path-mode: gomod
+
+formatters:
+  enable:
+    - gci
+  settings:
+    gci:
+      sections:
+        - standard
+        - default
+        - prefix(kasir-api)
+      custom-order: true
+
+linters:
+  default: standard
+  enable:
+    # Code quality
+    - revive
+    - gocritic
+    - unconvert
+    - prealloc
+    - misspell
+    - dupword
+    - dupl
+    - dogsled
+
+    # Error handling
+    - errorlint
+    - nilerr
+
+    # Security
+    - gosec
+
+    # Complexity & style
+    - cyclop
+    - funlen
+    - nestif
+    - lll
+    - nakedret
+    - godot
+
+    # HTTP
+    - bodyclose
+
+    # Performance
+    - perfsprint
+
+    # Modernization
+    - modernize
+    - usestdlibvars
+    - intrange
+
+  disable:
+    # Too noisy / not applicable for this project
+    - exhaustruct     # requires filling all struct fields — impractical
+    - ireturn         # forbids returning interfaces — we use them for DI
+    - varnamelen      # too strict on short variable names (r, w, id, etc.)
+    - wrapcheck       # too strict about wrapping every error from external pkg
+    - wsl             # overly opinionated whitespace formatting
+    - nlreturn        # forced blank line before return — noise
+    - gochecknoglobals # we use global sentinel errors
+    - testpackage     # we use same-package tests (_test.go in same pkg)
+    - paralleltest    # not all tests benefit from t.Parallel()
+    - tparallel       # same as above
+    - depguard        # no dependency restrictions
+    - goheader        # no license header requirements
+    - tagliatelle     # JSON tag naming is already consistent
+    - forbidigo       # no forbidden function patterns
+    - godox           # allow TODO/FIXME comments
+    - err113          # too strict about dynamic error creation
+    - mnd             # "magic number" detection — too noisy for HTTP status codes etc.
+    - interfacebloat  # our interfaces are reasonably sized
+    - inamedparam     # not needed for this project size
+    - noctx           # requires context plumbing through all repo interfaces — separate refactor
+    - goprintffuncname # logger uses Info/Error not Infof/Errorf — intentional
+
+  settings:
+    revive:
+      rules:
+        # Enforce exported types/functions have comments
+        - name: exported
+          arguments:
+            - "checkPrivateReceivers"
+          severity: warning
+        # No bare returns
+        - name: bare-return
+          severity: error
+        # Consistent receiver naming
+        - name: receiver-naming
+          severity: warning
+        # Function arguments limit
+        - name: argument-limit
+          arguments: [5]
+          severity: warning
+        # Return values limit
+        - name: function-result-limit
+          arguments: [3]
+          severity: warning
+        # if-then-else → early return
+        - name: early-return
+          severity: warning
+        # Empty blocks
+        - name: empty-block
+          severity: error
+        # Enforce error naming convention (errXxx or ErrXxx)
+        - name: error-naming
+          severity: warning
+        # No unnecessary else
+        - name: superfluous-else
+          severity: warning
+          arguments:
+            - "preserveScope"
+        # Context should be first parameter
+        - name: context-keys-type
+          severity: warning
+        - name: context-as-argument
+          severity: error
+        # Unexported return types
+        - name: unexported-return
+          severity: warning
+        # No blank imports except in main/test
+        - name: blank-imports
+          severity: warning
+        # Error strings should not be capitalized or end with punctuation
+        - name: error-strings
+          severity: warning
+        # Increment/decrement operators
+        - name: increment-decrement
+          severity: warning
+
+    cyclop:
+      max-complexity: 15
+
+    funlen:
+      lines: 80
+      statements: 50
+
+    nestif:
+      min-complexity: 5
+
+    lll:
+      line-length: 130
+      tab-width: 4
+
+    nakedret:
+      max-func-lines: 20
+
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - style
+        - performance
+      disabled-checks:
+        - whyNoLint
+        - hugeParam     # too strict for this project
+
+    dupl:
+      threshold: 120
+
+    godot:
+      scope: declarations
+      capital: true
+
+    gosec:
+      excludes:
+        - G104  # unhandled errors — covered by errcheck
+        - G304  # file path from variable — not applicable (API server)
+
+    errorlint:
+      errorf: true
+      asserts: true
+      comparison: true
+
+    misspell:
+      locale: US
+
+    perfsprint:
+      strconcat: false  # string concat is fine for simple cases
+
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - std-error-handling
+      - common-false-positives
+    rules:
+      # Relax rules for test files.
+      - path: _test\.go
+        linters:
+          - funlen
+          - dupl
+          - cyclop
+          - gosec
+          - errcheck
+          - errorlint
+          - lll
+          - gocritic
+          - revive
+          - dogsled
+          - staticcheck
+          - perfsprint
+          - modernize
+          - intrange
+          - godot
+      # Allow long lines in migration queries and postgres repos
+      - path: repositories/postgres/
+        linters:
+          - lll
+          - funlen
+      # Main function is naturally long
+      - path: kasir_api\.go
+        linters:
+          - funlen
+          - cyclop
+      # Router dispatch function is naturally complex.
+      - path: router/router\.go
+        linters:
+          - cyclop
+          - funlen
+          - lll
+      # Seeder uses intentional Indonesian product names and math/rand.
+      - path: cmd/seeder/
+        linters:
+          - misspell
+          - gosec
+          - intrange
+          - godot
+          - modernize
+
+issues:
+  max-issues-per-linter: 50
+  max-same-issues: 5
+
+output:
+  formats:
+    text:
+      print-linter-name: true
+      print-issued-lines: true
+      colors: true
+  sort-order:
+    - linter
+    - severity
+    - file

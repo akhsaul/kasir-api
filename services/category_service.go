@@ -1,9 +1,10 @@
 package service
 
 import (
-	"kasir-api/models"
-	"kasir-api/repositories"
 	"strings"
+
+	model "kasir-api/models"
+	repository "kasir-api/repositories"
 )
 
 // CategoryService handles business logic for categories.

@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"errors"
 
-	"kasir-api/models"
+	model "kasir-api/models"
 )
 
 // CategoryRepository implements repository.CategoryRepository using PostgreSQL.
@@ -46,7 +46,7 @@ func (r *CategoryRepository) GetByID(id int) (*model.Category, error) {
 	`, id).Scan(&c.ID, &c.Name, &c.Description)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, model.ErrNotFound
+			return nil, model.ErrCategoryNotFound
 		}
 		return nil, err
 	}
@@ -71,7 +71,7 @@ func (r *CategoryRepository) Update(category *model.Category) error {
 	}
 	n, _ := result.RowsAffected()
 	if n == 0 {
-		return model.ErrNotFound
+		return model.ErrCategoryNotFound
 	}
 	return nil
 }
@@ -84,7 +84,7 @@ func (r *CategoryRepository) Delete(id int) error {
 	}
 	n, _ := result.RowsAffected()
 	if n == 0 {
-		return model.ErrNotFound
+		return model.ErrCategoryNotFound
 	}
 	return nil
 }
